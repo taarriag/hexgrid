@@ -27,7 +27,6 @@ public class HexCell : MonoBehaviour {
       transform.localPosition = position;
 
       Vector3 uiPosition = uiRect.localPosition;
-      //uiPosition.z = elevation * -HexMetrics.elevationStep;
       uiPosition.z = -position.y;
       uiRect.localPosition = uiPosition;
       
@@ -42,6 +41,12 @@ public class HexCell : MonoBehaviour {
       }
     
       Refresh();
+    }
+  }
+
+  public float RiverSurfaceY {
+    get {
+      return (elevation + HexMetrics.riverSurfaceElevationOffset) * HexMetrics.elevationStep;
     }
   }
 
