@@ -17,12 +17,12 @@ public static class HexMetrics {
 	public const float horizontalTerraceStepSize = 1f / terraceSteps;
 	public const float verticalTerraceStepSize = 1f / (terracesPerSlope + 1);
 	
-	public const float cellPerturbStrength = 0f; //4f;	// Recommended tweek
+	public const float cellPerturbStrength = 4f; //0f;	// Recommended tweek
 	public const float elevationPerturbStrength = 0f; //1.5f;	// Recommended tweak
 	
 	public const int chunkSizeX = 5, chunkSizeZ = 5;
 
-	public const float streamBedElevationOffset = -1f;
+	public const float streamBedElevationOffset = -1.75f; //-1f;
 	public const float riverSurfaceElevationOffset = -0.5f;
 
 	// We are using world coordinates to sample the noise texture, which causes the texture
