@@ -21,6 +21,7 @@ public class HexCoordinates {
 	public int Z { 
 		get {
 			return z;
+
 		}
 	}
 
