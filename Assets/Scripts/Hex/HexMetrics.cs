@@ -30,6 +30,7 @@ public static class HexMetrics {
 	// to scale the noise sampling so that the texture covers a much larger area. 
 	public const float noiseScale = 0.003f; // The texture will cover 333.3 square units rather than 1 unit repeating, which means we can sample directly using world coordinates now.
 	public static Texture2D noiseSource;
+	public static Color[] colors;
 
 	// Orientation with point at the too, consider center at (0,0,0)
 	public static Vector3[] corners = {

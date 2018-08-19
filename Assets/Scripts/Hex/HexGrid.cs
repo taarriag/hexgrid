@@ -1,14 +1,14 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using System.IO;
 
 public class HexGrid : MonoBehaviour {
 	public int chunkCountX = 4, chunkCountZ = 3;
-	public Color defaultColor = Color.white;
 	public HexCell cellPrefab;
 	public Text cellLabelPrefab;
 	public HexGridChunk chunkPrefab;
-	
 	public Texture2D noiseSource;
+	public Color[] colors;
 
 	private int cellCountX, cellCountZ;
 	private HexCell[] cells;
@@ -23,6 +23,7 @@ public class HexGrid : MonoBehaviour {
 
 		CreateChunks();
 		CreateCells();
+		HexMetrics.colors = colors;
 	}
 
 	private void CreateChunks() {
@@ -49,6 +50,7 @@ public class HexGrid : MonoBehaviour {
 		// Static variables do not survive recompiles while in play mode, as static variables aren't serialized by unity.
 		// We need to reassign the texture in OnEnable as well, as this method gets invoked after a recompile.
 		HexMetrics.noiseSource = noiseSource;
+		HexMetrics.colors = colors;
 	}
 
 	public HexCell GetCell (Vector3 position) {
@@ -86,7 +88,6 @@ public class HexGrid : MonoBehaviour {
 		//cell.transform.SetParent(transform, false);
 		cell.transform.localPosition = position;
 		cell.coordinates = HexCoordinates.FromOffsetCoordinates(x, z);
-		cell.Color = defaultColor;
 
 		// East West connections
 		if (x > 0) {
@@ -131,6 +132,22 @@ public class HexGrid : MonoBehaviour {
 	public void ShowUI(bool visible) {
 		for (int i = 0; i < chunks.Length;i++) {
 			chunks[i].ShowUI(visible);
+		}
+	}
+
+	public void Save (BinaryWriter writer) {
+		for (int i = 0; i < cells.Length; i++) {
+			cells[i].Save(writer);
+		}
+	}
+
+	public void Load (BinaryReader reader) {
+		for (int i = 0; i < cells.Length; i++) {
+			cells[i].Load(reader);
+		}
+
+		for (int i = 0; i < chunks.Length; i++) {
+			chunks[i].Refresh();
 		}
 	}
 }
