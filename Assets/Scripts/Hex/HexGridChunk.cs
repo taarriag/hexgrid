@@ -3,7 +3,7 @@
 public class HexGridChunk : MonoBehaviour {
 
   private HexCell[] cells;
-  public HexMesh terrain, rivers, roads;
+  public HexMesh terrain, rivers, roads, water, waterShore;
   private Canvas gridCanvas;
 
   void Awake() {
@@ -37,12 +37,16 @@ public class HexGridChunk : MonoBehaviour {
     terrain.Clear();
 		rivers.Clear();
 		roads.Clear();
+		water.Clear();
+		waterShore.Clear();
     for (int i = 0; i < cells.Length; i++) {
       Triangulate(cells[i]);
     }
     terrain.Apply();
 		rivers.Apply();
 		roads.Apply();
+		water.Apply();
+		waterShore.Apply();
   }
 
   public void ShowUI (bool visible) {
@@ -51,7 +55,9 @@ public class HexGridChunk : MonoBehaviour {
 
 	private void Triangulate(HexCell cell) {
 		for (HexDirection d = HexDirection.NE; d <= HexDirection.NW; d++) {
-			Triangulate(d, cell);
+			if (cell != null) {
+				Triangulate(d, cell);
+			}
 		}
 	}
 
@@ -90,6 +96,94 @@ public class HexGridChunk : MonoBehaviour {
 		}
 		if (direction <= HexDirection.SE) {
 			TriangulateConnection(direction, cell, e);
+		}
+
+		if (cell.IsUnderwater) {
+			TriangulateWater(direction, cell, center);
+		}
+	}
+
+	private void TriangulateWater( 
+		HexDirection direction, HexCell cell, Vector3 center
+	){
+		center.y = cell.WaterSurfaceY;
+		HexCell neighbor = cell.GetNeighbor(direction);
+		if (neighbor != null && !neighbor.IsUnderwater) {
+			TriangulateWaterShore(direction, cell, neighbor, center);
+		} else {
+			TriangulateOpenWater(direction, cell, neighbor, center);
+		}
+	}
+
+	private void TriangulateWaterShore(
+		HexDirection direction, HexCell cell, HexCell neighbor, Vector3 center
+	) {
+		EdgeVertices e1 = new EdgeVertices(
+			center + HexMetrics.GetFirstWaterCorner(direction),
+			center + HexMetrics.GetSecondWaterCorner(direction)
+		);
+		water.AddTriangle(center, e1.v1, e1.v2);
+		water.AddTriangle(center, e1.v2, e1.v3);
+		water.AddTriangle(center, e1.v3, e1.v4);
+		water.AddTriangle(center, e1.v4, e1.v5);
+
+		// Use water edge on the water side and solid edge on the land
+		// side. 
+		Vector3 center2 = neighbor.Position;
+		center2.y = center.y;
+
+		EdgeVertices e2 = new EdgeVertices(
+			center2 + HexMetrics.GetSecondSolidCorner(direction.Opposite()),
+			center2 + HexMetrics.GetFirstSolidCorner(direction.Opposite()));
+
+		waterShore.AddQuad(e1.v1, e1.v2, e2.v1, e2.v2);
+		waterShore.AddQuad(e1.v2, e1.v3, e2.v2, e2.v3);
+		waterShore.AddQuad(e1.v3, e1.v4, e2.v3, e2.v4);
+		waterShore.AddQuad(e1.v4, e1.v5, e2.v4, e2.v5);
+		// Put the information about the shore on the V coordinate.
+		// Set it to 0 on the water side, and to 1 on the land side.
+		waterShore.AddQuadUV(0f, 0f, 0f, 1f);
+		waterShore.AddQuadUV(0f, 0f, 0f, 1f);
+		waterShore.AddQuadUV(0f, 0f, 0f, 1f);
+		waterShore.AddQuadUV(0f, 0f, 0f, 1f);
+
+		HexCell nextNeighbor = cell.GetNeighbor(direction.Next());
+		if (nextNeighbor != null) {
+			Vector3 v3 = nextNeighbor.Position
+				+ (nextNeighbor.IsUnderwater 
+					? HexMetrics.GetFirstWaterCorner(direction.Previous())
+					: HexMetrics.GetFirstSolidCorner(direction.Previous()));
+			v3.y = center.y;
+			waterShore.AddTriangle(
+				e1.v5, e2.v5, v3);
+			waterShore.AddTriangleUV(
+					new Vector2(0f, 0f),
+					new Vector2(0f, 1f),
+					new Vector2(0f, nextNeighbor.IsUnderwater ? 0f : 1f));
+		}
+	}
+
+	private void TriangulateOpenWater(
+		HexDirection direction, HexCell cell, HexCell neighbor, Vector3 center
+	) {
+		Vector3 c1 = center + HexMetrics.GetFirstWaterCorner(direction);
+		Vector3 c2 = center + HexMetrics.GetSecondWaterCorner(direction);
+		water.AddTriangle(center, c1, c2);
+
+		// Connect adjacent cells with a single quad.
+		if (direction <= HexDirection.SE && neighbor != null) {
+			Vector3 bridge = HexMetrics.GetWaterBridge(direction);
+			Vector3 e1 = c1 + bridge;
+			Vector3 e2 = c2 + bridge;
+			water.AddQuad(c1, c2, e1, e2);
+
+			if (direction <= HexDirection.E) {
+				HexCell nextNeighbor = cell.GetNeighbor(direction.Next());
+				if (nextNeighbor == null || !nextNeighbor.IsUnderwater) {
+					return;
+				}
+				water.AddTriangle(c2, e2, c2 + HexMetrics.GetWaterBridge(direction.Next()));
+			}
 		}
 	}
 

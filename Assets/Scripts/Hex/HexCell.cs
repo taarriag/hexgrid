@@ -15,6 +15,7 @@ public class HexCell : MonoBehaviour {
   private int elevation = int.MinValue;
   private bool hasIncomingRiver, hasOutgoingRiver;
   private HexDirection incomingRiver, outgoingRiver;
+  private int waterLevel;
 
   public int Elevation {
     get {
@@ -49,7 +50,13 @@ public class HexCell : MonoBehaviour {
 
   public float RiverSurfaceY {
     get {
-      return (elevation + HexMetrics.riverSurfaceElevationOffset) * HexMetrics.elevationStep;
+      return (elevation + HexMetrics.waterElevationOffset) * HexMetrics.elevationStep;
+    }
+  }
+
+  public float WaterSurfaceY {
+    get {
+      return (waterLevel + HexMetrics.waterElevationOffset) * HexMetrics.elevationStep;
     }
   }
 
@@ -119,6 +126,28 @@ public class HexCell : MonoBehaviour {
   public HexDirection RiverBeginOrEndDirection {
     get {
       return hasIncomingRiver ? incomingRiver : outgoingRiver;
+    }
+  }
+
+  public int WaterLevel {
+    get {
+      return waterLevel;
+    }
+
+    set {
+      if (waterLevel == value) {
+        return;
+      }
+      waterLevel = value;
+      Refresh();
+    }
+  }
+
+  public bool IsUnderwater {
+    get {
+      // When the water level and elevation are equal, the cell rises
+      // above the water.
+      return waterLevel > elevation;
     }
   }
 
@@ -277,8 +306,8 @@ public class HexCell : MonoBehaviour {
   public void Save (BinaryWriter writer) {
     writer.Write(((byte)terrainTypeIndex));
     writer.Write((byte)elevation);
-    /* writer.Write((byte)waterLevel);
-		writer.Write((byte)urbanLevel);
+    writer.Write((byte)waterLevel);
+		/* writer.Write((byte)urbanLevel);
 		writer.Write((byte)farmLevel);
 		writer.Write((byte)plantLevel);
 		writer.Write((byte)specialIndex);
@@ -319,15 +348,13 @@ public class HexCell : MonoBehaviour {
     terrainTypeIndex = reader.ReadByte();
     elevation = reader.ReadByte();
     RefreshPosition();
-    /* waterLevel = reader.ReadByte();
-		urbanLevel = reader.ReadByte();
+    waterLevel = reader.ReadByte();
+		/* urbanLevel = reader.ReadByte();
 		farmLevel = reader.ReadByte();
 		plantLevel = reader.ReadByte();
 		specialIndex = reader.ReadByte();
     waller = reader.ReadByte(); */
 
-    // hasIncomingRiver = reader.ReadBoolean();
-    // incomingRiver = (HexDirection) reader.ReadByte();
     byte riverData = reader.ReadByte();
     if (riverData >= 128) {
       hasIncomingRiver = true;
