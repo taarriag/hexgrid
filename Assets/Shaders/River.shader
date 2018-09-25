@@ -6,7 +6,8 @@
 		_Metallic ("Metallic", Range(0,1)) = 0.0
 	}
 	SubShader {
-		Tags { "RenderType"="Transparent" "Queue"="Transparent" }
+		// Rivers should always be rendered above the water on top 
+		Tags { "RenderType"="Transparent" "Queue"="Transparent+1" }
 		LOD 200
 
 		CGPROGRAM
@@ -15,6 +16,8 @@
 
 		// Use shader model 3.0 target, to get nicer looking lighting
 		#pragma target 3.0
+
+		#include "Water.cginc"
 
 		sampler2D _MainTex;
 
@@ -34,30 +37,11 @@
 		UNITY_INSTANCING_BUFFER_END(Props)
 
 		void surf (Input IN, inout SurfaceOutputStandard o) {
-			// Sample the texture (instead of showing raw UV)
-			// and multiply the material's color by the first channel
-			// of said texture.
-			float2 uv = IN.uv_MainTex;
-			// Since V coordinates are stretched alongide the river, 
-			// the noise texture looks stretched as well. We stretch
-			// it alongside the U axis by scaling down the given U coordinates
-			// by 1/16. This means we sample a narrow strip of the noise texture,
-			// rather than the entire texture.
-			//uv.x *= 0.0625;
-			// Slide the strip across the texture
-			uv.x = uv.x * 0.0625 + _Time.y * 0.005;
-			uv.y -= _Time.y * 0.25;	// Slow the flow to a quarter of the texture per second.
-			float4 noise = tex2D(_MainTex, uv);
+			float river = River(IN.uv_MainTex, _MainTex);
 
-			// Take a second sample of the texture, combine the samples.
-			float2 uv2 = IN.uv_MainTex;
-			uv2.x = uv2.x * 0.0625 - _Time.y * 0.0052;
-			uv2.y -= _Time.y * 0.23;
-			float4 noise2 = tex2D(_MainTex, uv2);
-			
 			//fixed4 c = _Color * (noise.r * noise2.a);
 			// Use material color as base color. Noise increases brightness and opacity.
-			fixed4 c = saturate(_Color + noise.r * noise2.a);	
+			fixed4 c = saturate(_Color + river); //noise.r * noise2.a);	
 			o.Albedo = c.rgb;
 			o.Metallic = _Metallic;
 			o.Smoothness = _Glossiness;
