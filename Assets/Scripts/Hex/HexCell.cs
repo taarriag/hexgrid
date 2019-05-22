@@ -27,17 +27,7 @@ public class HexCell : MonoBehaviour {
       }
       elevation = value;
       RefreshPosition();
-
-      // Prevent UpHill Rivers. If the new elevation is below that of the neighbor, remove the
-      // outgoing river.
-      if (hasOutgoingRiver && elevation < GetNeighbor(outgoingRiver).elevation) {
-        RemoveOutgoingRiver();
-      }
-
-      if (hasIncomingRiver && elevation > GetNeighbor(incomingRiver).elevation) {
-        RemoveIncomingRiver();
-      }
-
+      ValidateRivers();
       for (int i = 0; i < roads.Length; i++) {
         if (roads[i] && GetElevationDifference((HexDirection)i) > 1) {
           SetRoad(i, false);
@@ -139,6 +129,7 @@ public class HexCell : MonoBehaviour {
         return;
       }
       waterLevel = value;
+      ValidateRivers();
       Refresh();
     }
   }
@@ -240,7 +231,7 @@ public class HexCell : MonoBehaviour {
     }
 
     HexCell neighbor = GetNeighbor(direction);
-    if (!neighbor || elevation < neighbor.elevation) {
+    if (!IsValidRiverDestination(neighbor)) {
       return;
     }
 
@@ -302,6 +293,27 @@ public class HexCell : MonoBehaviour {
       }
     }
   }
+
+  bool IsValidRiverDestination (HexCell neighbor) {
+		return neighbor && (
+			elevation >= neighbor.elevation || waterLevel == neighbor.elevation
+		);
+	}
+
+	void ValidateRivers () {
+		if (
+			hasOutgoingRiver &&
+			!IsValidRiverDestination(GetNeighbor(outgoingRiver))
+		) {
+			RemoveOutgoingRiver();
+		}
+		if (
+			hasIncomingRiver &&
+			!GetNeighbor(incomingRiver).IsValidRiverDestination(this)
+		) {
+			RemoveIncomingRiver();
+		}
+	}
 
   public void Save (BinaryWriter writer) {
     writer.Write(((byte)terrainTypeIndex));
