@@ -9,6 +9,7 @@ public class HexGrid : MonoBehaviour {
 	public HexGridChunk chunkPrefab;
 	public Texture2D noiseSource;
 	public Color[] colors;
+  public int seed = 1234;
 
 	private int cellCountX, cellCountZ;
 	private HexCell[] cells;
@@ -17,6 +18,7 @@ public class HexGrid : MonoBehaviour {
 
 	private void Awake() {
 		HexMetrics.noiseSource = noiseSource;
+    HexMetrics.InitializeHashGrid(seed);
 
 		cellCountX = chunkCountX * HexMetrics.chunkSizeX;
 		cellCountZ = chunkCountZ * HexMetrics.chunkSizeZ;
@@ -49,7 +51,10 @@ public class HexGrid : MonoBehaviour {
 	private void OnEnable() {
 		// Static variables do not survive recompiles while in play mode, as static variables aren't serialized by unity.
 		// We need to reassign the texture in OnEnable as well, as this method gets invoked after a recompile.
-		HexMetrics.noiseSource = noiseSource;
+		if (!HexMetrics.noiseSource) {
+      HexMetrics.noiseSource = noiseSource;
+      HexMetrics.InitializeHashGrid(seed);
+    }
 		HexMetrics.colors = colors;
 	}
 

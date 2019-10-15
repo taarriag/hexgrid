@@ -27,12 +27,16 @@ public static class HexMetrics {
 	public const float streamBedElevationOffset = -1.75f; //-1f;
 	public const float waterElevationOffset = -0.5f;
 
+  public const int hashGridSize = 256;
+  public const float hashGridScale = 0.25f;
+
 	// We are using world coordinates to sample the noise texture, which causes the texture
 	// to tile every unit, while our cells are much larger (radious = 10 units). This means we have
 	// to scale the noise sampling so that the texture covers a much larger area. 
 	public const float noiseScale = 0.003f; // The texture will cover 333.3 square units rather than 1 unit repeating, which means we can sample directly using world coordinates now.
 	public static Texture2D noiseSource;
 	public static Color[] colors;
+  static float[] hashGrid;
 
 	// Orientation with point at the too, consider center at (0,0,0)
 	public static Vector3[] corners = {
@@ -133,4 +137,31 @@ public static class HexMetrics {
 		position.z += (sample.z * 2f - 1f) * cellPerturbStrength;
 		return position;
 	}
+
+  public static void InitializeHashGrid(int seed) {
+    hashGrid = new float[hashGridSize * hashGridSize];
+    // Initialize random with a seed so that the hash grid is repeatable across games.
+    // Note that by default Random seed defaults to some arbitrary value before the random
+    // number functions are used.
+    Random.State currentState = Random.state;
+    Random.InitState(seed);
+    for (int i = 0; i < hashGrid.Length; i++) {
+      hashGrid[i] = Random.value;
+    }
+    Random.state = currentState;
+  }
+
+  public static float SampleHashGrid (Vector3 position) {
+    // We produce a different value for each square unit, but the features are further
+    // apart. We stretch the grid by scaling down the position before computing the index.
+    int x = (int)(position.x * hashGridScale) % hashGridSize;
+    if (x < 0) {
+      x += hashGridSize;
+    }
+    int z = (int)(position.z * hashGridScale) % hashGridSize;
+    if (z < 0) {
+      z += hashGridSize;
+    }
+    return hashGrid[x + z * hashGridSize];
+  }
 }
